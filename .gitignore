@@ -1,1 +1,40 @@
+# <<<<<<< HEAD
 
+# =======
+# # Ignore environment files
+# .env
+
+# # Node modules (don’t upload to GitHub)
+# node_modules/
+
+# # Logs
+# *.log
+
+# # Build folders
+# frontend/build
+# backend/build
+
+# # OS files
+# .DS_Store
+# Thumbs.db
+# >>>>>>> 79caa5c (Add .gitignore to hide environment and build files)
+
+
+
+
+# Ignore environment files
+.env
+
+# Node modules (don’t upload to GitHub)
+node_modules/
+
+# Logs
+*.log
+
+# Build folders
+frontend/build
+backend/build
+
+# OS files
+.DS_Store
+Thumbs.db
