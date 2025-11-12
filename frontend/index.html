@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="C:\Users\sk zaheer\Downloads\logo.jpg">  
+    <title>Zintox</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Zintox</h2>
+            <p>Connecting...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Zintox Chatboot</h1>
+                <p>Send and receive messages without keeping your phone online.</p>
+            </div>
+            
+            <div class="login-form">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="login">Login</button>
+                    <button class="tab-button" data-tab="register">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="form-content active">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" required placeholder="Enter your email">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="submit-btn">Login</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="form-content">
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" id="register-username" required placeholder="Choose a username">
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="register-email" required placeholder="Enter your email">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone</label>
+                        <input type="tel" id="register-phone" required placeholder="Enter your phone number">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="register-password" required placeholder="Choose a password">
+                    </div>
+                    <button type="submit" class="submit-btn">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen hidden">
+        <div class="app-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar">U</div>
+                        <div class="user-details">
+                            <span class="user-name" id="user-name">User</span>
+                            <span class="user-status" id="user-status">Online</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="icon-btn" id="new-chat-btn" title="New Chat">💬</button>
+                         <button class="icon-btn" id="profile-btn" title="Profile">👤</button>
+                        <button class="icon-btn" id="logout-btn" title="Logout">🚪</button>
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="chat-search" placeholder="Search or start new chat">
+                </div>
+
+                <div class="chat-list" id="chat-list">
+                    <!-- Chats will be loaded here -->
+                </div>
+            </div>
+             
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <div class="chat-header" id="chat-header">
+                    <div class="chat-info">
+                        <div class="chat-avatar" id="current-chat-avatar">💬</div>
+                        <div class="chat-details">
+                            <span class="chat-name" id="current-chat-name">Select a chat</span>
+                            <span class="chat-status" id="current-chat-status">Click on a chat to start messaging</span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="icon-btn call-btn" title="Voice Call">📞</button>
+                        <button class="icon-btn video-btn" title="Video Call">📹</button>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messages-container">
+                    <div class="welcome-message">
+                        <h3>Welcome to Zintox</h3>
+                        <p>Select a chat from the sidebar to start messaging</p>
+                    </div>
+                </div>
+
+                <div class="typing-indicator" id="typing-indicator" >
+                    <span id="typing-text">Someone is typing...</span>
+                </div>
+
+                <div class="message-input-area" id="message-input-area" >
+                    <div class="input-container">
+                        <input type="text" id="message-input" placeholder="Type a message...">
+                        <button id="send-button" class="send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div id="new-chat-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>New Chat</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="user-search" placeholder="Search users...">
+                <div class="users-list" id="users-list">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Interface -->
+    <div id="call-interface" class="hidden">
+        <!-- Will be implemented later -->
+    </div>
+    
+    
+    <script src="scripts/app.js">
+
+
+function handleLogout() {
+    console.log('🚪 Logging out...');
+    localStorage.removeItem('whatsapp_token');
+    if (socket) {
+        socket.disconnect();
+    }
+    currentUser = null;
+    currentChatId = null;
+    chats = [];
+    
+    // Reload page to show login
+    location.reload();
+}
+
+// Add event listeners for profile features
+function setupProfileEvents() {
+    // Profile button
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', showProfileModal);
+    }
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    // Close profile modal
+    const closeProfileModal = document.getElementById('close-profile-modal');
+    if (closeProfileModal) {
+        closeProfileModal.addEventListener('click', hideProfileModal);
+    }
+    
+    // Cancel profile button
+    const cancelProfileBtn = document.getElementById('cancel-profile-btn');
+    if (cancelProfileBtn) {
+        cancelProfileBtn.addEventListener('click', hideProfileModal);
+    }
+    
+    // Profile form submission
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', updateProfile);
+    }
+    
+    // Status character count
+    const statusInput = document.getElementById('profile-status');
+    if (statusInput) {
+        statusInput.addEventListener('input', (e) => {
+            const charCount = document.getElementById('status-char-count');
+            if (charCount) {
+                charCount.textContent = e.target.value.length;
+            }
+        });
+    }
+    
+    // Click outside modal to close
+    const profileModal = document.getElementById('profile-modal');
+    if (profileModal) {
+        profileModal.addEventListener('click', (e) => {
+            if (e.target.id === 'profile-modal') {
+                hideProfileModal();
+            }
+        });
+    }
+}
+    </script>
+
+   
+     
+</body>
+</html>

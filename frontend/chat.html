@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zintox - Real Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #e6e6e6;
+            height: 100vh;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        /* Sidebar */
+        .sidebar {
+            width: 30%;
+            border-right: 1px solid #e0e0e0;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #128C7E;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .chat-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .chat-item:hover {
+            background: #f5f5f5;
+        }
+        .chat-item.active {
+            background: #e9e9e9;
+        }
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #25D366;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .chat-info {
+            flex: 1;
+        }
+        .chat-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .chat-last-message {
+            color: #666;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .chat-time {
+            color: #999;
+            font-size: 12px;
+        }
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+        }
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #e6e6e6;
+        }
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .message.sent {
+            background: #dcf8c6;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+        .message.received {
+            background: white;
+            border-bottom-left-radius: 0;
+        }
+        .message-sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #128C7E;
+        }
+        .message-content {
+            margin-bottom: 5px;
+        }
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            text-align: right;
+        }
+        .input-area {
+            padding: 20px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 25px;
+            margin: 0 10px;
+            font-size: 16px;
+        }
+        .send-button {
+            background: #128C7E;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        .send-button:hover {
+            background: #0d6e63;
+        }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #25D366;
+            margin-left: 5px;
+        }
+        .status-indicator.offline {
+            background: #999;
+        }
+        .debug-panel {
+            background: #f8f9fa;
+            padding: 10px;
+            border-top: 1px solid #dee2e6;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-avatar" id="userAvatar">J</div>
+                <h2>Zintox</h2>
+            </div>
+            <div class="chat-list" id="chatList">
+                <!-- Chats will be loaded here -->
+            </div>
+            <div class="debug-panel" id="debugPanel">
+                Socket: <span id="socketStatus">Disconnected</span> | 
+                User: <span id="userStatus">Not logged in</span>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                <div class="chat-avatar" id="currentChatAvatar">💬</div>
+                <div class="chat-info">
+                    <div class="chat-name" id="currentChatName">Select a chat</div>
+                    <div class="chat-status" id="currentChatStatus">Click on a chat to start messaging</div>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div >
+                    <h3>Welcome to WhatsApp Clone</h3>
+                    <p>Select a chat from the sidebar to start messaging</p>
+                </div>
+            </div>
+
+            <div class="input-area" id="inputArea" >
+                <input type="text" class="message-input" id="messageInput" placeholder="Type a message...">
+                <button class="send-button" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <script>
+        const socket = io();
+        let currentChatId = null;
+        let currentUser = null;
+        let chats = [];
+
+        // Initialize the app
+        async function initApp() {
+            updateDebugPanel('Connecting...', 'Initializing');
+            
+            try {
+                // First, let's login or register
+                await loginUser();
+                
+                // Load chats
+                await loadChats();
+                
+                // Connect to socket
+                socket.emit('user_connected', currentUser.id);
+                
+                updateDebugPanel('Connected', `User: ${currentUser.username}`);
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                updateDebugPanel('Error', 'Failed to initialize');
+            }
+        }
+
+        // Simple login - in real app, you'd have a proper login form
+        async function loginUser() {
+            try {
+                // Try to login with seeded user
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'john@example.com',
+                        password: 'password123'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+
+                const data = await response.json();
+                currentUser = data.user;
+                
+                // Update UI
+                document.getElementById('userAvatar').textContent = currentUser.avatar || 'U';
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                // If login fails, try to register
+                await registerUser();
+            }
+        }
+
+        async function registerUser() {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: 'testuser_' + Date.now(),
+                    email: 'test' + Date.now() + '@example.com',
+                    phone: '+1234567' + Date.now().toString().slice(-4),
+                    password: 'password123'
+                })
+            });
+
+            const data = await response.json();
+            currentUser = data.user;
+            document.getElementById('userAvatar').textContent = currentUser.avatar || 'U';
+        }
+
+        // Load chats for current user
+        async function loadChats() {
+            try {
+                const response = await fetch(`/api/chats/user/${currentUser.id}`);
+                if (!response.ok) throw new Error('Failed to load chats');
+                
+                chats = await response.json();
+                displayChats(chats);
+                
+            } catch (error) {
+                console.error('Error loading chats:', error);
+            }
+        }
+
+        function displayChats(chats) {
+            const chatList = document.getElementById('chatList');
+            chatList.innerHTML = '';
+
+            chats.forEach(chat => {
+                const otherParticipants = chat.participants.filter(p => p._id !== currentUser.id);
+                const chatName = chat.isGroup ? 
+                    chat.groupName : 
+                    otherParticipants[0]?.username || 'Unknown';
+                
+                const chatAvatar = chat.isGroup ? 
+                    '👥' : 
+                    otherParticipants[0]?.avatar || 'U';
+
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.onclick = () => selectChat(chat);
+
+                chatItem.innerHTML = `
+                    <div class="chat-avatar">${chatAvatar}</div>
+                    <div class="chat-info">
+                        <div class="chat-name">${chatName}</div>
+                        <div class="chat-last-message">
+                            ${chat.lastMessage?.content || 'No messages yet'}
+                        </div>
+                    </div>
+                    <div class="chat-time">
+                        ${new Date(chat.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                `;
+
+                chatList.appendChild(chatItem);
+            });
+        }
+
+        function selectChat(chat) {
+            currentChatId = chat._id;
+            
+            const otherParticipants = chat.participants.filter(p => p._id !== currentUser.id);
+            const chatName = chat.isGroup ? chat.groupName : otherParticipants[0]?.username;
+            const chatAvatar = chat.isGroup ? '👥' : otherParticipants[0]?.avatar;
+            const isOnline = chat.isGroup ? null : otherParticipants[0]?.online;
+
+            // Update UI
+            document.getElementById('currentChatName').textContent = chatName;
+            document.getElementById('currentChatAvatar').textContent = chatAvatar;
+            document.getElementById('currentChatStatus').textContent = 
+                chat.isGroup ? `${chat.participants.length} participants` : 
+                isOnline ? 'Online' : 'Offline';
+            
+            document.getElementById('inputArea').style.display = 'flex';
+            
+            // Load messages
+            loadMessages(chat._id);
+            
+            // Join chat room for real-time updates
+            socket.emit('join_chat', chat._id);
+        }
+
+        async function loadMessages(chatId) {
+            try {
+                const response = await fetch(`/api/messages/chat/${chatId}`);
+                if (!response.ok) throw new Error('Failed to load messages');
+                
+                const data = await response.json();
+                displayMessages(data.messages);
+                
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        function displayMessages(messages) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = '';
+
+            if (messages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messages.forEach(message => {
+                const isSent = message.sender._id === currentUser.id;
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                
+                messageDiv.innerHTML = `
+                    ${isSent ? '' : `<div class="message-sender">${message.sender.username}</div>`}
+                    <div class="message-content">${message.content}</div>
+                    <div class="message-time">
+                        ${new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                `;
+
+                messagesContainer.appendChild(messageDiv);
+            });
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+
+            if (content && currentChatId && currentUser) {
+                const messageData = {
+                    chatId: currentChatId,
+                    senderId: currentUser.id,
+                    content: content,
+                    messageType: 'text'
+                };
+
+                console.log('Sending message:', messageData);
+                socket.emit('send_message', messageData);
+                input.value = '';
+            }
+        }
+
+        // Socket.IO event listeners
+        socket.on('connect', () => {
+            updateDebugPanel('Connected', `User: ${currentUser?.username || 'Unknown'}`);
+            console.log('✅ Connected to Socket.IO');
+        });
+
+        socket.on('disconnect', () => {
+            updateDebugPanel('Disconnected', 'Socket disconnected');
+            console.log('❌ Disconnected from Socket.IO');
+        });
+
+        socket.on('new_message', (message) => {
+            console.log('📨 New message received:', message);
+            
+            if (message.chat === currentChatId) {
+                // Add message to UI
+                const messagesContainer = document.getElementById('messagesContainer');
+                const isSent = message.sender._id === currentUser.id;
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                
+                messageDiv.innerHTML = `
+                    ${isSent ? '' : `<div class="message-sender">${message.sender.username}</div>`}
+                    <div class="message-content">${message.content}</div>
+                    <div class="message-time">
+                        ${new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                `;
+
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                // Update chat list
+                updateChatLastMessage(message);
+            }
+        });
+
+        socket.on('user_online', (userId) => {
+            console.log('🟢 User online:', userId);
+            updateUserStatus(userId, true);
+        });
+
+        socket.on('user_offline', (userId) => {
+            console.log('🔴 User offline:', userId);
+            updateUserStatus(userId, false);
+        });
+
+        function updateUserStatus(userId, online) {
+            // Update status in chat if this user is in current chat
+            const currentChat = chats.find(chat => chat._id === currentChatId);
+            if (currentChat && !currentChat.isGroup) {
+                const otherUser = currentChat.participants.find(p => p._id === userId);
+                if (otherUser) {
+                    document.getElementById('currentChatStatus').textContent = 
+                        online ? 'Online' : 'Offline';
+                }
+            }
+        }
+
+        function updateChatLastMessage(message) {
+            // Update the chat in our local array
+            const chatIndex = chats.findIndex(chat => chat._id === message.chat);
+            if (chatIndex !== -1) {
+                chats[chatIndex].lastMessage = message;
+                chats[chatIndex].updatedAt = new Date();
+                
+                // Re-render chat list
+                displayChats(chats);
+            }
+        }
+
+        function updateDebugPanel(socketStatus, userStatus) {
+            document.getElementById('socketStatus').textContent = socketStatus;
+            document.getElementById('userStatus').textContent = userStatus;
+        }
+
+        // Handle Enter key in message input
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize the app when page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+    
+</body>
+</html>
